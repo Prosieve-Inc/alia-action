@@ -1,0 +1,7 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      run: bun run typecheck
+    format-check:
+      run: bun run format:check
