@@ -34,5 +34,5 @@ check: typecheck format-check test
 
 # Create GitHub App on an org
 [group('dev')]
-create-app org app_name="alia-dev":
+create-app org app_name="Alia":
     ./scripts/create-app.sh {{app_name}} {{org}}
