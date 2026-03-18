@@ -1,0 +1,27 @@
+name: Alia PR Analysis
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [closed]
+  push:
+    branches: [main]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' && github.event.issue)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Alia Action
+        uses: ./
+        with:
+          backend_url: ${{ secrets.ALIA_BACKEND_URL }}
+          auth_route: ${{ secrets.ALIA_AUTH_ROUTE }}
+          insights_route: ${{ secrets.ALIA_INSIGHTS_ROUTE }}
+          alia_key: ${{ secrets.ALIA_KEY }}
