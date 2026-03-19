@@ -34,7 +34,12 @@ async function run(): Promise<void> {
         authResult.encryptedCredentials,
         config.aliaKey,
       );
-      const credentials: VertexCredentials = JSON.parse(decryptedJson);
+      const credentials: VertexCredentials = {
+        privateKey: decryptedJson,
+        serviceAccountEmail: "teste@teste.com",
+        projectId: "teste",
+        region: "teste",
+      };
 
       const octokit = createOctokitClient(config.githubToken);
       await routeEvent(octokit, config, credentials);
