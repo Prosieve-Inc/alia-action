@@ -18,12 +18,25 @@ async function run(): Promise<void> {
       );
 
       // Extract installation ID from webhook payload
-      const installationId = (
-        github.context.payload as { installation?: { id?: number } }
-      ).installation?.id;
+      const installationId = github.context.payload.installation?.id;
+      log.debug(`Payload keys: ${Object.keys(github.context.payload).join(", ")}`);
+      log.debug(`organization: ${JSON.stringify(github.context.payload.organization, null, 2)}`);
+      log.debug(`repository: ${JSON.stringify(github.context.payload.repository, null, 2)}`);
+      if (github.context.payload.installation) {
+        log.info(`Installation found: id=${github.context.payload.installation.id}`);
+      } else {
+        log.warn("No 'installation' key in webhook payload");
+      }
       if (!installationId) {
         throw new ActionError(
-          "Missing installation ID -- GitHub App is not installed on this repository",
+          [
+            "Missing installation ID — no 'installation' key in webhook payload.",
+            "Verify your GitHub App setup:",
+            `  1. App is installed: https://github.com/organizations/${github.context.repo.owner}/settings/installations`,
+            "  2. This repo is included (if using 'selected repositories')",
+            "  3. App subscribes to: issue_comment, pull_request, push",
+            "  4. Enable debug logging (ACTIONS_STEP_DEBUG=true) and check 'Payload keys' output",
+          ].join("\n"),
           true,
         );
       }
