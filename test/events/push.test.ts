@@ -63,6 +63,7 @@ mock.module("../../src/mocks/submission", () => ({
 
 import { handlePush } from "../../src/events/push";
 import { createMockPushPayload } from "../mock-context";
+import type { VertexCredentials } from "../../src/auth/types";
 
 const mockConfig: ActionConfig = {
   backendUrl: "https://api.example.com",
@@ -70,6 +71,13 @@ const mockConfig: ActionConfig = {
   insightsRoute: "/insights",
   aliaKey: "test-key",
   githubToken: "ghp_test",
+};
+
+const mockCredentials: VertexCredentials = {
+  privateKey: "test-private-key",
+  serviceAccountEmail: "test@project.iam.gserviceaccount.com",
+  projectId: "test-project",
+  region: "us-central1",
 };
 
 describe("push handler", () => {
@@ -95,7 +103,7 @@ describe("push handler", () => {
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig);
+    await handlePush(payload, mockOctokit, mockConfig, mockCredentials);
 
     expect(mockFindMergedPR).toHaveBeenCalledWith(
       mockOctokit,
@@ -109,13 +117,13 @@ describe("push handler", () => {
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig);
+    await handlePush(payload, mockOctokit, mockConfig, mockCredentials);
 
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
     expect(mockFetchFiles).toHaveBeenCalledTimes(1);
     expect(mockFetchCommits).toHaveBeenCalledTimes(1);
     expect(mockFetchComments).toHaveBeenCalledTimes(1);
-    expect(mockAuth).toHaveBeenCalledTimes(1);
+    expect(mockAuth).not.toHaveBeenCalled();
     expect(mockAnalysis).toHaveBeenCalledTimes(1);
     expect(mockSubmission).toHaveBeenCalledTimes(1);
   });
@@ -127,7 +135,7 @@ describe("push handler", () => {
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig);
+    await handlePush(payload, mockOctokit, mockConfig, mockCredentials);
 
     // Should NOT fetch PR data or run pipeline
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();
@@ -142,7 +150,7 @@ describe("push handler", () => {
     });
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig);
+    await handlePush(payload, mockOctokit, mockConfig, mockCredentials);
 
     expect(mockFindMergedPR).not.toHaveBeenCalled();
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();

@@ -88,6 +88,7 @@ mock.module("../../src/mocks/submission", () => ({
 }));
 
 import { routeEvent } from "../../src/events/router";
+import type { VertexCredentials } from "../../src/auth/types";
 
 const mockConfig: ActionConfig = {
   backendUrl: "https://api.example.com",
@@ -95,6 +96,13 @@ const mockConfig: ActionConfig = {
   insightsRoute: "/insights",
   aliaKey: "test-key",
   githubToken: "ghp_test",
+};
+
+const mockCredentials: VertexCredentials = {
+  privateKey: "test-private-key",
+  serviceAccountEmail: "test@project.iam.gserviceaccount.com",
+  projectId: "test-project",
+  region: "us-central1",
 };
 
 describe("event router", () => {
@@ -130,7 +138,7 @@ describe("event router", () => {
     };
 
     const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent(mockOctokit, mockConfig, mockCredentials);
 
     // Verify handler ran by checking it called fetchPullRequestData (PR comment path)
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
@@ -149,7 +157,7 @@ describe("event router", () => {
     };
 
     const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent(mockOctokit, mockConfig, mockCredentials);
 
     // Verify handler ran by checking it called fetchPullRequestData
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
@@ -165,7 +173,7 @@ describe("event router", () => {
     };
 
     const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent(mockOctokit, mockConfig, mockCredentials);
 
     // Verify push handler ran by checking it called findMergedPR
     expect(mockFindMergedPR).toHaveBeenCalledTimes(1);
@@ -180,7 +188,7 @@ describe("event router", () => {
     };
 
     const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent(mockOctokit, mockConfig, mockCredentials);
 
     // None of the handler functions should have been called
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();
@@ -192,7 +200,7 @@ describe("event router", () => {
     mockPayload = {};
 
     const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent(mockOctokit, mockConfig, mockCredentials);
 
     expect(mockCoreWarning).toHaveBeenCalled();
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();

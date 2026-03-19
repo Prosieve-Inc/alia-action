@@ -64,6 +64,7 @@ mock.module("../../src/mocks/submission", () => ({
 
 import { handlePullRequestClosed } from "../../src/events/pull-request-closed";
 import { createMockPullRequestPayload } from "../mock-context";
+import type { VertexCredentials } from "../../src/auth/types";
 
 const mockConfig: ActionConfig = {
   backendUrl: "https://api.example.com",
@@ -71,6 +72,13 @@ const mockConfig: ActionConfig = {
   insightsRoute: "/insights",
   aliaKey: "test-key",
   githubToken: "ghp_test",
+};
+
+const mockCredentials: VertexCredentials = {
+  privateKey: "test-private-key",
+  serviceAccountEmail: "test@project.iam.gserviceaccount.com",
+  projectId: "test-project",
+  region: "us-central1",
 };
 
 describe("pull-request-closed handler", () => {
@@ -93,7 +101,12 @@ describe("pull-request-closed handler", () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
+    await handlePullRequestClosed(
+      payload,
+      mockOctokit,
+      mockConfig,
+      mockCredentials,
+    );
 
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
     expect(mockFetchFiles).toHaveBeenCalledTimes(1);
@@ -105,7 +118,12 @@ describe("pull-request-closed handler", () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
+    await handlePullRequestClosed(
+      payload,
+      mockOctokit,
+      mockConfig,
+      mockCredentials,
+    );
 
     expect(mockFormatEventContext).toHaveBeenCalledTimes(1);
     const contextArg = lastFormatArg as {
@@ -114,13 +132,18 @@ describe("pull-request-closed handler", () => {
     expect(contextArg.pullRequest?.merged).toBe(true);
   });
 
-  it("calls mock pipeline", async () => {
+  it("calls mock pipeline (analysis, submission) -- auth is done in main.ts", async () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
+    await handlePullRequestClosed(
+      payload,
+      mockOctokit,
+      mockConfig,
+      mockCredentials,
+    );
 
-    expect(mockAuth).toHaveBeenCalledTimes(1);
+    expect(mockAuth).not.toHaveBeenCalled();
     expect(mockAnalysis).toHaveBeenCalledTimes(1);
     expect(mockSubmission).toHaveBeenCalledTimes(1);
   });
@@ -150,7 +173,12 @@ describe("pull-request-closed handler", () => {
     });
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
+    await handlePullRequestClosed(
+      payload,
+      mockOctokit,
+      mockConfig,
+      mockCredentials,
+    );
 
     const contextArg = lastFormatArg as {
       pullRequest?: { merged: boolean };
