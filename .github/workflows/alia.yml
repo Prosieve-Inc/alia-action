@@ -8,6 +8,10 @@ on:
   push:
     branches: [main]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   analyze:
     runs-on: ubuntu-latest
