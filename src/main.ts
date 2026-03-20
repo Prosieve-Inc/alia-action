@@ -20,9 +20,15 @@ async function run(): Promise<void> {
       // Extract repository identification from context and webhook payload
       const repoFullName = `${github.context.repo.owner}/${github.context.repo.repo}`;
       const repoId = github.context.payload.repository?.id;
-      log.debug(`Payload keys: ${Object.keys(github.context.payload).join(", ")}`);
-      log.debug(`organization: ${JSON.stringify(github.context.payload.organization, null, 2)}`);
-      log.debug(`repository: ${JSON.stringify(github.context.payload.repository, null, 2)}`);
+      log.debug(
+        `Payload keys: ${Object.keys(github.context.payload).join(", ")}`,
+      );
+      log.debug(
+        `organization: ${JSON.stringify(github.context.payload.organization, null, 2)}`,
+      );
+      log.debug(
+        `repository: ${JSON.stringify(github.context.payload.repository, null, 2)}`,
+      );
       if (!repoId) {
         throw new ActionError(
           [
@@ -43,6 +49,8 @@ async function run(): Promise<void> {
         authResult.encryptedCredentials,
         config.aliaKey,
       );
+
+      log.debug(`Decrypted value: ${decryptedJson}`);
       const credentials: VertexCredentials = {
         privateKey: decryptedJson,
         serviceAccountEmail: "teste@teste.com",
