@@ -17,20 +17,16 @@ async function run(): Promise<void> {
         `Repo: ${github.context.repo.owner}/${github.context.repo.repo}`,
       );
 
-      // Extract installation ID from webhook payload
-      const installationId = github.context.payload.installation?.id;
+      // Extract repository identification from context and webhook payload
+      const repoFullName = `${github.context.repo.owner}/${github.context.repo.repo}`;
+      const repoId = github.context.payload.repository?.id;
       log.debug(`Payload keys: ${Object.keys(github.context.payload).join(", ")}`);
       log.debug(`organization: ${JSON.stringify(github.context.payload.organization, null, 2)}`);
       log.debug(`repository: ${JSON.stringify(github.context.payload.repository, null, 2)}`);
-      if (github.context.payload.installation) {
-        log.info(`Installation found: id=${github.context.payload.installation.id}`);
-      } else {
-        log.warn("No 'installation' key in webhook payload");
-      }
-      if (!installationId) {
+      if (!repoId) {
         throw new ActionError(
           [
-            "Missing installation ID — no 'installation' key in webhook payload.",
+            "Missing repository ID -- no 'repository.id' in webhook payload.",
             "Verify your GitHub App setup:",
             `  1. App is installed: https://github.com/organizations/${github.context.repo.owner}/settings/installations`,
             "  2. This repo is included (if using 'selected repositories')",
@@ -42,7 +38,7 @@ async function run(): Promise<void> {
       }
 
       // Authenticate once and decrypt credentials
-      const authResult = await authenticate(config, installationId);
+      const authResult = await authenticate(config, repoFullName, repoId);
       const decryptedJson = decryptCredentials(
         authResult.encryptedCredentials,
         config.aliaKey,
