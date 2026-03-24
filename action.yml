@@ -18,6 +18,33 @@ runs:
         cd $GITHUB_ACTION_PATH
         bun install --production
 
+    - name: Fetch git history
+      shell: bash
+      run: |
+        EVENT="${{ github.event_name }}"
+        WORKSPACE="${{ github.workspace }}"
+        if [ "$EVENT" = "workflow_dispatch" ]; then
+          echo "Manual trigger — fetching full history"
+          git -C "$WORKSPACE" fetch --unshallow || true
+        elif [ "$EVENT" = "pull_request" ] || [ "$EVENT" = "pull_request_target" ]; then
+          echo "PR trigger — fetching base branch and PR commits"
+          git -C "$WORKSPACE" fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 || true
+          COMMITS=${{ github.event.pull_request.commits }}
+          git -C "$WORKSPACE" fetch --deepen=$(( COMMITS + 1 )) || true
+        elif [ "$EVENT" = "push" ]; then
+          BEFORE="${{ github.event.before }}"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "New branch push — keeping shallow clone"
+          else
+            COMMIT_COUNT=$(jq '.commits | length' "$GITHUB_EVENT_PATH")
+            echo "Push trigger — fetching $COMMIT_COUNT commit(s)"
+            git -C "$WORKSPACE" fetch --deepen=$(( COMMIT_COUNT + 2 )) || true
+          fi
+        else
+          echo "Event ($EVENT) — fetching recent history"
+          git -C "$WORKSPACE" fetch --deepen=20 || true
+        fi
+
     - name: Install RTK CLI
       shell: bash
       run: |

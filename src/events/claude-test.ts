@@ -3,6 +3,7 @@ import type {
   SDKResultError,
 } from "@anthropic-ai/claude-agent-sdk";
 import { query } from "@anthropic-ai/claude-agent-sdk";
+import * as github from "@actions/github";
 import { log } from "../utils/logger";
 
 /** Tools auto-approved without permission prompts (read-only). */
@@ -26,15 +27,58 @@ const ALLOWED_TOOLS: string[] = [
 
 const SYSTEM_PROMPT = `You are a senior software engineer analyzing a GitHub repository.
 You have access to the full repository checkout. Use the available tools (Read, Glob, Grep, LS, and git commands via Bash) to explore the codebase.
-Be thorough but concise in your analysis.`;
+Be thorough but concise in your analysis and by the end always say how much commits could you see.`;
 
-const USER_PROMPT = `Analyze this repository and provide a brief summary covering:
+function buildPrompt(): string {
+  const eventName = github.context.eventName;
+  const payload = github.context.payload;
+
+  if (eventName === "pull_request" || eventName === "pull_request_target") {
+    const pr = payload.pull_request;
+    const baseRef = pr?.base?.ref ?? "main";
+    const prNumber = pr?.number ?? "unknown";
+    const prTitle = pr?.title ?? "";
+
+    return `This action was triggered by PR #${prNumber}: "${prTitle}".
+
+Analyze ONLY the changes in this pull request:
+1. Run \`git log origin/${baseRef}..HEAD --oneline\` to see the PR commits
+2. Run \`git diff origin/${baseRef}..HEAD --stat\` to see which files changed
+3. Read the most important changed files to understand what the PR does
+4. Provide a summary of: what changed, why (based on commit messages and code), and any observations
+
+Keep your final summary under 300 words.`;
+  }
+
+  if (eventName === "push") {
+    const beforeSha = (payload.before as string | undefined)?.slice(0, 7) ?? "";
+    const afterSha = (payload.after as string | undefined)?.slice(0, 7) ?? "";
+    const ref = payload.ref as string | undefined;
+    const branch = ref?.replace("refs/heads/", "") ?? "unknown";
+
+    return `This action was triggered by a push to \`${branch}\`.
+
+Analyze ONLY the pushed commits:
+1. Run \`git log ${beforeSha}..${afterSha} --oneline\` to see the pushed commits
+2. Run \`git diff ${beforeSha}..${afterSha} --stat\` to see which files changed
+3. Read the most important changed files to understand what was pushed
+4. Provide a summary of: what changed, who authored it, and any observations
+
+Keep your final summary under 300 words.`;
+  }
+
+  // workflow_dispatch or any other trigger — full repo analysis
+  return `This action was triggered manually.
+
+Analyze this repository with full git history available:
 1. What this project does (look at README, package.json, or similar)
 2. The main technologies and frameworks used
 3. The high-level directory structure
-4. Recent git activity (last 5 commits with authors)
+4. Recent git activity (last 20 commits with authors): run \`git log --oneline -20\`
+5. Key contributors and branching patterns
 
 Use the available tools to read files and run git commands. Keep your final summary under 300 words.`;
+}
 
 export async function handleClaudeTest(): Promise<void> {
   log.info("Running Claude SDK agent test...");
@@ -47,7 +91,11 @@ export async function handleClaudeTest(): Promise<void> {
   }
 
   const cwd = process.env.GITHUB_WORKSPACE || process.cwd();
+  const eventName = github.context.eventName;
   log.info(`Working directory: ${cwd}`);
+  log.info(`Event: ${eventName}`);
+
+  const prompt = buildPrompt();
 
   const sdkOptions = {
     model: "claude-haiku-4-5",
@@ -68,7 +116,7 @@ export async function handleClaudeTest(): Promise<void> {
   let resultMessage: SDKResultSuccess | SDKResultError | undefined;
 
   for await (const message of query({
-    prompt: USER_PROMPT,
+    prompt,
     options: sdkOptions,
   })) {
     log.debug(`SDK message type: ${message.type}`);
