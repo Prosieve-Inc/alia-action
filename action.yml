@@ -18,9 +18,20 @@ runs:
         cd $GITHUB_ACTION_PATH
         bun install --production
 
+    - name: Install RTK CLI
+      shell: bash
+      run: |
+        curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+        echo "$HOME/.rtk/bin" >> $GITHUB_PATH
+
+    - name: Initialize RTK for Claude Code
+      shell: bash
+      run: rtk init -g
+
     - name: Run Alia Action
       shell: bash
       run: bun run $GITHUB_ACTION_PATH/src/main.ts
       env:
         GITHUB_TOKEN: ${{ github.token }}
         CLAUDE_CODE_USE_VERTEX: "1"
+        GITHUB_WORKSPACE: ${{ github.workspace }}
