@@ -1,6 +1,6 @@
 # Alia Action
 
-AI-powered PR analysis -- code never leaves your runner.
+AI-powered PR analysis -- code never leaves your runner. By Alia.
 
 ## How It Works
 
