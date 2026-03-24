@@ -1,6 +1,7 @@
 name: Alia PR Analysis
 
 on:
+  workflow_dispatch:
   issue_comment:
     types: [created]
   pull_request:
@@ -16,6 +17,7 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     if: >-
+      github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
       github.event_name == 'pull_request' ||
       (github.event_name == 'issue_comment' && github.event.issue)
