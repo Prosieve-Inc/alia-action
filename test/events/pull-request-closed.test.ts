@@ -46,39 +46,13 @@ mock.module("../../src/github/data-formatter", () => ({
   formatEventContext: mockFormatEventContext,
 }));
 
-const mockAuth = mock(() =>
-  Promise.resolve({ authorized: true, encryptedCredentials: "mock-creds" }),
-);
-const mockAnalysis = mock(() => Promise.resolve("Mock analysis result"));
-const mockSubmission = mock(() => Promise.resolve());
-
-mock.module("../../src/mocks/auth", () => ({
-  mockAuth,
-}));
-mock.module("../../src/mocks/analysis", () => ({
-  mockAnalysis,
-}));
-mock.module("../../src/mocks/submission", () => ({
-  mockSubmission,
-}));
-
 import { handlePullRequestClosed } from "../../src/events/pull-request-closed";
 import { createMockPullRequestPayload } from "../mock-context";
-import type { VertexCredentials } from "../../src/auth/types";
 
 const mockConfig: ActionConfig = {
-  backendUrl: "https://api.example.com",
-  authRoute: "/auth",
-  insightsRoute: "/insights",
-  aliaKey: "test-key",
+  vertexProjectId: "test-project",
+  vertexRegion: "us-east5",
   githubToken: "ghp_test",
-};
-
-const mockCredentials: VertexCredentials = {
-  privateKey: "test-private-key",
-  serviceAccountEmail: "test@project.iam.gserviceaccount.com",
-  projectId: "test-project",
-  region: "us-central1",
 };
 
 describe("pull-request-closed handler", () => {
@@ -90,9 +64,6 @@ describe("pull-request-closed handler", () => {
     mockFetchComments.mockClear();
     mockFetchFiles.mockClear();
     mockFetchCommits.mockClear();
-    mockAuth.mockClear();
-    mockAnalysis.mockClear();
-    mockSubmission.mockClear();
     mockFormatEventContext.mockClear();
     lastFormatArg = null;
   });
@@ -101,12 +72,7 @@ describe("pull-request-closed handler", () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(
-      payload,
-      mockOctokit,
-      mockConfig,
-      mockCredentials,
-    );
+    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
 
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
     expect(mockFetchFiles).toHaveBeenCalledTimes(1);
@@ -118,34 +84,13 @@ describe("pull-request-closed handler", () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(
-      payload,
-      mockOctokit,
-      mockConfig,
-      mockCredentials,
-    );
+    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
 
     expect(mockFormatEventContext).toHaveBeenCalledTimes(1);
     const contextArg = lastFormatArg as {
       pullRequest?: { merged: boolean };
     };
     expect(contextArg.pullRequest?.merged).toBe(true);
-  });
-
-  it("calls mock pipeline (analysis, submission) -- auth is done in main.ts", async () => {
-    const payload = createMockPullRequestPayload();
-    const mockOctokit = {} as never;
-
-    await handlePullRequestClosed(
-      payload,
-      mockOctokit,
-      mockConfig,
-      mockCredentials,
-    );
-
-    expect(mockAuth).not.toHaveBeenCalled();
-    expect(mockAnalysis).toHaveBeenCalledTimes(1);
-    expect(mockSubmission).toHaveBeenCalledTimes(1);
   });
 
   it("handles non-merged PR correctly", async () => {
@@ -173,12 +118,7 @@ describe("pull-request-closed handler", () => {
     });
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(
-      payload,
-      mockOctokit,
-      mockConfig,
-      mockCredentials,
-    );
+    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
 
     const contextArg = lastFormatArg as {
       pullRequest?: { merged: boolean };

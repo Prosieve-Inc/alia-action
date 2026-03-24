@@ -5,18 +5,13 @@ branding:
   color: "blue"
 
 inputs:
-  backend_url:
-    description: "Backend API base URL"
+  project_id:
+    description: "Google Cloud project ID for Vertex AI"
     required: true
-  auth_route:
-    description: "Backend auth endpoint path"
+  region:
+    description: "Google Cloud region for Vertex AI"
     required: true
-  insights_route:
-    description: "Backend insights submission endpoint path"
-    required: true
-  alia_key:
-    description: "Decryption key for Vertex AI credentials"
-    required: true
+    default: "us-east5"
 
 runs:
   using: "composite"
@@ -36,8 +31,9 @@ runs:
       shell: bash
       run: bun run $GITHUB_ACTION_PATH/src/main.ts
       env:
-        INPUT_BACKEND_URL: ${{ inputs.backend_url }}
-        INPUT_AUTH_ROUTE: ${{ inputs.auth_route }}
-        INPUT_INSIGHTS_ROUTE: ${{ inputs.insights_route }}
-        INPUT_ALIA_KEY: ${{ inputs.alia_key }}
+        INPUT_PROJECT_ID: ${{ inputs.project_id }}
+        INPUT_REGION: ${{ inputs.region }}
         GITHUB_TOKEN: ${{ github.token }}
+        CLAUDE_CODE_USE_VERTEX: "1"
+        ANTHROPIC_VERTEX_PROJECT_ID: ${{ inputs.project_id }}
+        CLOUD_ML_REGION: ${{ inputs.region }}

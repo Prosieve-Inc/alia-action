@@ -45,39 +45,13 @@ mock.module("../../src/github/data-formatter", () => ({
   formatEventContext: mockFormatEventContext,
 }));
 
-const mockAuth = mock(() =>
-  Promise.resolve({ authorized: true, encryptedCredentials: "mock-creds" }),
-);
-const mockAnalysis = mock(() => Promise.resolve("Mock analysis result"));
-const mockSubmission = mock(() => Promise.resolve());
-
-mock.module("../../src/mocks/auth", () => ({
-  mockAuth,
-}));
-mock.module("../../src/mocks/analysis", () => ({
-  mockAnalysis,
-}));
-mock.module("../../src/mocks/submission", () => ({
-  mockSubmission,
-}));
-
 import { handlePush } from "../../src/events/push";
 import { createMockPushPayload } from "../mock-context";
-import type { VertexCredentials } from "../../src/auth/types";
 
 const mockConfig: ActionConfig = {
-  backendUrl: "https://api.example.com",
-  authRoute: "/auth",
-  insightsRoute: "/insights",
-  aliaKey: "test-key",
+  vertexProjectId: "test-project",
+  vertexRegion: "us-east5",
   githubToken: "ghp_test",
-};
-
-const mockCredentials: VertexCredentials = {
-  privateKey: "test-private-key",
-  serviceAccountEmail: "test@project.iam.gserviceaccount.com",
-  projectId: "test-project",
-  region: "us-central1",
 };
 
 describe("push handler", () => {
@@ -87,9 +61,6 @@ describe("push handler", () => {
     mockFetchComments.mockClear();
     mockFetchFiles.mockClear();
     mockFetchCommits.mockClear();
-    mockAuth.mockClear();
-    mockAnalysis.mockClear();
-    mockSubmission.mockClear();
     mockFormatEventContext.mockClear();
     mockCoreInfo.mockClear();
     mockCoreWarning.mockClear();
@@ -103,7 +74,7 @@ describe("push handler", () => {
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig, mockCredentials);
+    await handlePush(payload, mockOctokit, mockConfig);
 
     expect(mockFindMergedPR).toHaveBeenCalledWith(
       mockOctokit,
@@ -117,15 +88,12 @@ describe("push handler", () => {
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig, mockCredentials);
+    await handlePush(payload, mockOctokit, mockConfig);
 
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
     expect(mockFetchFiles).toHaveBeenCalledTimes(1);
     expect(mockFetchCommits).toHaveBeenCalledTimes(1);
     expect(mockFetchComments).toHaveBeenCalledTimes(1);
-    expect(mockAuth).not.toHaveBeenCalled();
-    expect(mockAnalysis).toHaveBeenCalledTimes(1);
-    expect(mockSubmission).toHaveBeenCalledTimes(1);
   });
 
   it("logs warning and exits cleanly when no merged PR found", async () => {
@@ -135,13 +103,10 @@ describe("push handler", () => {
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig, mockCredentials);
+    await handlePush(payload, mockOctokit, mockConfig);
 
-    // Should NOT fetch PR data or run pipeline
+    // Should NOT fetch PR data
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();
-    expect(mockAuth).not.toHaveBeenCalled();
-    expect(mockAnalysis).not.toHaveBeenCalled();
-    expect(mockSubmission).not.toHaveBeenCalled();
   });
 
   it("skips non-main branch pushes", async () => {
@@ -150,7 +115,7 @@ describe("push handler", () => {
     });
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig, mockCredentials);
+    await handlePush(payload, mockOctokit, mockConfig);
 
     expect(mockFindMergedPR).not.toHaveBeenCalled();
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();

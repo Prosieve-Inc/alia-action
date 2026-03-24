@@ -1,7 +1,6 @@
 import type { PushEvent } from "@octokit/webhooks-types";
 import type { Octokit } from "@octokit/rest";
 import type { ActionConfig } from "../config/inputs";
-import type { VertexCredentials } from "../auth/types";
 import type { EventContext } from "../github/types";
 import {
   fetchPullRequestData,
@@ -11,15 +10,12 @@ import {
   findMergedPR,
 } from "../github/data-fetcher";
 import { formatEventContext } from "../github/data-formatter";
-import { mockAnalysis } from "../mocks/analysis";
-import { mockSubmission } from "../mocks/submission";
 import { log } from "../utils/logger";
 
 export async function handlePush(
   payload: PushEvent,
   octokit: Octokit,
-  config: ActionConfig,
-  credentials: VertexCredentials,
+  _config: ActionConfig,
 ): Promise<void> {
   // Only process pushes to main branch
   if (payload.ref !== "refs/heads/main") {
@@ -61,23 +57,5 @@ export async function handlePush(
   };
 
   log.info(formatEventContext(context));
-
-  // TODO: Phase 3 will use credentials with Claude SDK via Vertex AI
-  log.debug(`Credentials available for project: ${credentials.projectId}`);
-
-  // Run mock pipeline (analysis + submission -- auth is now done in main.ts)
-  const analysisResult = await mockAnalysis(context);
-  await mockSubmission(
-    config.backendUrl,
-    config.insightsRoute,
-    analysisResult,
-    {
-      owner,
-      repo,
-      prNumber,
-      commitSha,
-    },
-  );
-
   log.info(`push handler complete (PR #${prNumber})`);
 }
