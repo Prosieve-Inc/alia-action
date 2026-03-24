@@ -13,6 +13,18 @@ mock.module("@actions/core", () => ({
   setFailed: mock(() => {}),
 }));
 
+// Mock logger to avoid transitive @actions/core dependency
+mock.module("../../src/utils/logger", () => ({
+  log: {
+    info: mock(() => {}),
+    warn: mock(() => {}),
+    error: mock(() => {}),
+    debug: mock(() => {}),
+    group: mock((_name: string, fn: () => Promise<void>) => fn()),
+    metadata: mock(() => {}),
+  },
+}));
+
 const mockFetchPullRequestData = mock(() =>
   Promise.resolve({
     number: 42,
@@ -49,8 +61,6 @@ import { handlePush } from "../../src/events/push";
 import { createMockPushPayload } from "../mock-context";
 
 const mockConfig: ActionConfig = {
-  vertexProjectId: "test-project",
-  vertexRegion: "us-east5",
   githubToken: "ghp_test",
 };
 

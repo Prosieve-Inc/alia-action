@@ -17,8 +17,6 @@ describe("loadInputs", () => {
 
   beforeEach(() => {
     originalEnv = { ...process.env };
-    process.env.INPUT_PROJECT_ID = "my-gcp-project";
-    process.env.INPUT_REGION = "us-east5";
     process.env.GITHUB_TOKEN = "ghp_testtoken";
   });
 
@@ -26,17 +24,13 @@ describe("loadInputs", () => {
     process.env = originalEnv;
   });
 
-  it("returns ActionConfig with all fields when env vars are set", () => {
+  it("returns ActionConfig with githubToken when env var is set", () => {
     const config = loadInputs();
-
-    expect(config.vertexProjectId).toBe("my-gcp-project");
-    expect(config.vertexRegion).toBe("us-east5");
     expect(config.githubToken).toBe("ghp_testtoken");
   });
 
   it("throws when GITHUB_TOKEN is missing from env", () => {
     delete process.env.GITHUB_TOKEN;
-
     expect(() => loadInputs()).toThrow("GITHUB_TOKEN");
   });
 });

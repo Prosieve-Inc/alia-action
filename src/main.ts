@@ -9,7 +9,7 @@ import { log } from "./utils/logger";
 async function run(): Promise<void> {
   try {
     await log.group("Alia Action", async () => {
-      const config = loadInputs();
+      loadInputs(); // validate GITHUB_TOKEN is present
       log.info(`Event: ${github.context.eventName}`);
       log.info(
         `Repo: ${github.context.repo.owner}/${github.context.repo.repo}`,
@@ -17,7 +17,7 @@ async function run(): Promise<void> {
 
       // Run Claude SDK test (hard-coded proof-of-concept)
       await log.group("Claude SDK Test", async () => {
-        await handleClaudeTest(config);
+        await handleClaudeTest();
       });
 
       // const octokit = createOctokitClient(config.githubToken);

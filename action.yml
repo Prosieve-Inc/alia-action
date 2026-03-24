@@ -4,15 +4,6 @@ branding:
   icon: "eye"
   color: "blue"
 
-inputs:
-  project_id:
-    description: "Google Cloud project ID for Vertex AI"
-    required: true
-  region:
-    description: "Google Cloud region for Vertex AI"
-    required: true
-    default: "us-east5"
-
 runs:
   using: "composite"
   steps:
@@ -31,9 +22,5 @@ runs:
       shell: bash
       run: bun run $GITHUB_ACTION_PATH/src/main.ts
       env:
-        INPUT_PROJECT_ID: ${{ inputs.project_id }}
-        INPUT_REGION: ${{ inputs.region }}
         GITHUB_TOKEN: ${{ github.token }}
         CLAUDE_CODE_USE_VERTEX: "1"
-        ANTHROPIC_VERTEX_PROJECT_ID: ${{ inputs.project_id }}
-        CLOUD_ML_REGION: ${{ inputs.region }}

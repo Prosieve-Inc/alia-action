@@ -16,6 +16,18 @@ mock.module("@actions/core", () => ({
   debug: mock(() => {}),
 }));
 
+// Mock logger to avoid transitive @actions/core dependency
+mock.module("../../src/utils/logger", () => ({
+  log: {
+    info: mock(() => {}),
+    warn: mock(() => {}),
+    error: mock(() => {}),
+    debug: mock(() => {}),
+    group: mock((_name: string, fn: () => Promise<void>) => fn()),
+    metadata: mock(() => {}),
+  },
+}));
+
 function createMockOctokit(overrides: Record<string, unknown> = {}) {
   return {
     rest: {

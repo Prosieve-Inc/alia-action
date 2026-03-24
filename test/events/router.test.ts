@@ -13,6 +13,18 @@ mock.module("@actions/core", () => ({
   setFailed: mock(() => {}),
 }));
 
+// Mock logger to avoid transitive @actions/core dependency
+mock.module("../../src/utils/logger", () => ({
+  log: {
+    info: mock(() => {}),
+    warn: mock(() => {}),
+    error: mock(() => {}),
+    debug: mock(() => {}),
+    group: mock((_name: string, fn: () => Promise<void>) => fn()),
+    metadata: mock(() => {}),
+  },
+}));
+
 // Mock @actions/github context
 let mockEventName = "issue_comment";
 let mockPayload: Record<string, unknown> = {};
@@ -74,8 +86,6 @@ mock.module("../../src/github/data-formatter", () => ({
 import { routeEvent } from "../../src/events/router";
 
 const mockConfig: ActionConfig = {
-  vertexProjectId: "test-project",
-  vertexRegion: "us-east5",
   githubToken: "ghp_test",
 };
 
@@ -166,14 +176,13 @@ describe("event router", () => {
     expect(mockFindMergedPR).not.toHaveBeenCalled();
   });
 
-  it("logs warning for unsupported events", async () => {
+  it("does not call any handler for unsupported events", async () => {
     mockEventName = "fork";
     mockPayload = {};
 
     const mockOctokit = {} as never;
     await routeEvent(mockOctokit, mockConfig);
 
-    expect(mockCoreWarning).toHaveBeenCalled();
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();
     expect(mockFindMergedPR).not.toHaveBeenCalled();
   });

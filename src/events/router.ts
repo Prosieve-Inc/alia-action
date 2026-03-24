@@ -1,4 +1,3 @@
-import * as core from "@actions/core";
 import * as github from "@actions/github";
 import type {
   IssueCommentEvent,
@@ -10,6 +9,7 @@ import type { ActionConfig } from "../config/inputs";
 import { handleIssueComment } from "./issue-comment";
 import { handlePullRequestClosed } from "./pull-request-closed";
 import { handlePush } from "./push";
+import { log } from "../utils/logger";
 
 export async function routeEvent(
   octokit: Octokit,
@@ -33,7 +33,7 @@ export async function routeEvent(
           config,
         );
       } else {
-        core.info(
+        log.info(
           `Ignoring pull_request action: ${(payload as PullRequestEvent).action}`,
         );
       }
@@ -42,6 +42,6 @@ export async function routeEvent(
       await handlePush(payload as PushEvent, octokit, config);
       break;
     default:
-      core.warning(`Unsupported event: ${eventName}`);
+      log.warn(`Unsupported event: ${eventName}`);
   }
 }
