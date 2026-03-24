@@ -4,6 +4,15 @@ import type {
 } from "@anthropic-ai/claude-agent-sdk";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import * as github from "@actions/github";
+import { createOctokitClient } from "../github/client";
+import {
+  fetchPullRequestData,
+  fetchComments,
+  fetchFiles,
+  fetchCommits,
+  findMergedPR,
+} from "../github/data-fetcher";
+import type { EventContext } from "../github/types";
 import { log } from "../utils/logger";
 
 /** Tools auto-approved without permission prompts (read-only). */
@@ -27,25 +36,147 @@ const ALLOWED_TOOLS: string[] = [
 
 const SYSTEM_PROMPT = `You are a senior software engineer analyzing a GitHub repository.
 You have access to the full repository checkout. Use the available tools (Read, Glob, Grep, LS, and git commands via Bash) to explore the codebase.
-Be thorough but concise in your analysis and by the end always say how much commits could you see.`;
+Be thorough but concise in your analysis.`;
 
-function buildPrompt(): string {
+async function fetchPRContext(): Promise<EventContext | null> {
+  const eventName = github.context.eventName;
+  if (eventName !== "pull_request" && eventName !== "pull_request_target") {
+    return null;
+  }
+
+  const prNumber = github.context.payload.pull_request?.number;
+  if (!prNumber) return null;
+
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return null;
+
+  const { owner, repo } = github.context.repo;
+  const octokit = createOctokitClient(token);
+
+  log.info(`Fetching PR #${prNumber} context from GitHub API...`);
+
+  const [pullRequest, comments, files, commits] = await Promise.all([
+    fetchPullRequestData(octokit, owner, repo, prNumber),
+    fetchComments(octokit, owner, repo, prNumber, true),
+    fetchFiles(octokit, owner, repo, prNumber),
+    fetchCommits(octokit, owner, repo, prNumber),
+  ]);
+
+  log.info(
+    `PR context: ${files.length} files, ${commits.length} commits, ${comments.length} comments`,
+  );
+
+  return {
+    eventName,
+    owner,
+    repo,
+    pullRequest,
+    comments,
+    files,
+    commits,
+  };
+}
+
+function formatPRContext(ctx: EventContext): string {
+  const lines: string[] = [];
+  const pr = ctx.pullRequest;
+
+  if (pr) {
+    lines.push(`## Pull Request #${pr.number}: ${pr.title}`);
+    lines.push(`- **Author:** ${pr.author}`);
+    lines.push(`- **Branches:** ${pr.headBranch} → ${pr.baseBranch}`);
+    lines.push(`- **Status:** ${pr.merged ? "merged" : "open"}`);
+    if (pr.mergedAt) lines.push(`- **Merged at:** ${pr.mergedAt}`);
+    if (pr.labels.length > 0)
+      lines.push(`- **Labels:** ${pr.labels.join(", ")}`);
+    lines.push(`- **URL:** ${pr.url}`);
+    if (pr.body) {
+      lines.push("");
+      lines.push("### Description");
+      lines.push(pr.body);
+    }
+  }
+
+  if (ctx.commits.length > 0) {
+    lines.push("");
+    lines.push("### Commits");
+    for (const c of ctx.commits) {
+      lines.push(`- \`${c.sha.slice(0, 7)}\` ${c.message} (${c.author})`);
+    }
+  }
+
+  if (ctx.files.length > 0) {
+    lines.push("");
+    lines.push("### Changed Files");
+    for (const f of ctx.files) {
+      lines.push(
+        `- ${f.status} \`${f.filename}\` (+${f.additions}/-${f.deletions})`,
+      );
+    }
+  }
+
+  if (ctx.comments.length > 0) {
+    lines.push("");
+    lines.push("### Comments");
+    for (const c of ctx.comments) {
+      lines.push(`- **${c.author}** (${c.type}, ${c.createdAt}):`);
+      lines.push(`  ${c.body}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function buildPrompt(prContext: EventContext | null): string {
   const eventName = github.context.eventName;
   const payload = github.context.payload;
 
-  if (eventName === "pull_request" || eventName === "pull_request_target") {
+  if (
+    (eventName === "pull_request" || eventName === "pull_request_target") &&
+    prContext
+  ) {
     const pr = payload.pull_request;
     const baseRef = pr?.base?.ref ?? "main";
-    const prNumber = pr?.number ?? "unknown";
-    const prTitle = pr?.title ?? "";
+    const isMergedOrClosed = payload.action === "closed";
+    const action = pr?.merged
+      ? "merged"
+      : ((payload.action as string | undefined) ?? "updated");
 
-    return `This action was triggered by PR #${prNumber}: "${prTitle}".
+    const context = formatPRContext(prContext);
 
-Analyze ONLY the changes in this pull request:
-1. Run \`git log origin/${baseRef}..HEAD --oneline\` to see the PR commits
-2. Run \`git diff origin/${baseRef}..HEAD --stat\` to see which files changed
-3. Read the most important changed files to understand what the PR does
-4. Provide a summary of: what changed, why (based on commit messages and code), and any observations
+    if (isMergedOrClosed) {
+      // After merge/close, the local checkout may not reflect the PR branch.
+      // Rely on the API-fetched context which has all commits, files, and comments.
+      return `This action was triggered by a PR being ${action}.
+
+Here is the full PR context fetched from the GitHub API (commits, files, comments):
+
+${context}
+
+The PR has been ${action}, so the local git checkout is on the base branch (\`${baseRef}\`).
+Do NOT use \`git log origin/${baseRef}..HEAD\` — it won't show PR commits. All commit and file data is provided above.
+
+Analyze this pull request:
+1. Use the commits, changed files, and diffs listed above as your primary source
+2. Use Read/Glob/Grep to inspect the current state of key changed files in the repo
+3. Consider the PR comments and review feedback above
+4. Provide a summary of: what changed, why (based on description, commits, and code), the review discussion, and any observations
+
+Keep your final summary under 300 words.`;
+    }
+
+    // Open PR — local checkout has the PR branch, git commands work
+    return `This action was triggered by a PR being ${action}.
+
+Here is the full PR context fetched from the GitHub API:
+
+${context}
+
+Now analyze the code changes in this pull request:
+1. Run \`git log origin/${baseRef}..HEAD --oneline\` to verify the commits
+2. Read the most important changed files to understand what the PR does
+3. Consider the PR comments and review feedback above
+4. Provide a summary of: what changed, why (based on description, commits, and code), the review discussion, and any observations
 
 Keep your final summary under 300 words.`;
   }
@@ -95,7 +226,29 @@ export async function handleClaudeTest(): Promise<void> {
   log.info(`Working directory: ${cwd}`);
   log.info(`Event: ${eventName}`);
 
-  const prompt = buildPrompt();
+  // Skip push events that came from a merged PR — the pull_request event handles those
+  if (eventName === "push") {
+    const token = process.env.GITHUB_TOKEN;
+    if (token) {
+      const octokit = createOctokitClient(token);
+      const { owner, repo } = github.context.repo;
+      const mergedPR = await findMergedPR(
+        octokit,
+        owner,
+        repo,
+        github.context.sha,
+      );
+      if (mergedPR) {
+        log.info(
+          `Push is from merged PR #${mergedPR} — skipping (handled by pull_request event).`,
+        );
+        return;
+      }
+    }
+  }
+
+  const prContext = await fetchPRContext();
+  const prompt = buildPrompt(prContext);
 
   const sdkOptions = {
     model: "claude-haiku-4-5",

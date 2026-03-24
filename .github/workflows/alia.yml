@@ -5,13 +5,14 @@ on:
   issue_comment:
     types: [created]
   pull_request:
-    types: [closed]
+    types: [opened, reopened, synchronize, closed]
   push:
     branches: [main]
 
 permissions:
   id-token: write
   contents: read
+  pull-requests: read
 
 jobs:
   analyze:
