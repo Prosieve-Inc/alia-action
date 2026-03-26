@@ -62,3 +62,6 @@ runs:
         GITHUB_TOKEN: ${{ github.token }}
         CLAUDE_CODE_USE_VERTEX: "1"
         GITHUB_WORKSPACE: ${{ github.workspace }}
+        ALIA_BACKEND_URL: ${{ env.ALIA_BACKEND_URL }}
+        ALIA_SKILL_STORE_ROUTE: ${{ env.ALIA_SKILL_STORE_ROUTE }}
+        ALIA_SAVE_INSIGHTS_ROUTE: ${{ env.ALIA_SAVE_INSIGHTS_ROUTE }}

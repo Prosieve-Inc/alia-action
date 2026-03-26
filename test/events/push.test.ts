@@ -11,6 +11,7 @@ mock.module("@actions/core", () => ({
   debug: mock(() => {}),
   group: mock((_name: string, fn: () => Promise<void>) => fn()),
   setFailed: mock(() => {}),
+  getIDToken: mock(() => Promise.resolve("mock-oidc-token")),
 }));
 
 // Mock logger to avoid transitive @actions/core dependency
@@ -57,12 +58,36 @@ mock.module("../../src/github/data-formatter", () => ({
   formatEventContext: mockFormatEventContext,
 }));
 
+// Mock claude-analysis
+const mockRunClaudeAnalysis = mock(() =>
+  Promise.resolve({ summaries: ["test insight"], cost: 0.01, durationMs: 1000 }),
+);
+mock.module("../../src/events/claude-analysis", () => ({
+  runClaudeAnalysis: mockRunClaudeAnalysis,
+}));
+
+// Mock alia-client
+const mockSendInsights = mock(() => Promise.resolve());
+mock.module("../../src/services/alia-client", () => ({
+  fetchSkillZip: mock(() => Promise.resolve(new ArrayBuffer(0))),
+  sendInsights: mockSendInsights,
+}));
+
+import type { AliaClient } from "../../src/services/alia-client";
 import { handlePush } from "../../src/events/push";
 import { createMockPushPayload } from "../mock-context";
 
-const mockConfig: ActionConfig = {
+const mockConfig = {
   githubToken: "ghp_test",
-};
+  aliaBackendUrl: "https://backend.example.com",
+  aliaSkillStoreRoute: "/api/skills",
+  aliaSaveInsightsRoute: "/api/insights",
+} as ActionConfig;
+
+const mockAliaClient = {
+  fetchSkillZip: mock(() => Promise.resolve(new ArrayBuffer(0))),
+  sendInsights: mockSendInsights,
+} as unknown as AliaClient;
 
 describe("push handler", () => {
   beforeEach(() => {
@@ -72,6 +97,8 @@ describe("push handler", () => {
     mockFetchFiles.mockClear();
     mockFetchCommits.mockClear();
     mockFormatEventContext.mockClear();
+    mockRunClaudeAnalysis.mockClear();
+    mockSendInsights.mockClear();
     mockCoreInfo.mockClear();
     mockCoreWarning.mockClear();
     // Reset to default returning 42
@@ -84,7 +111,7 @@ describe("push handler", () => {
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig);
+    await handlePush(payload, mockOctokit, mockConfig, mockAliaClient);
 
     expect(mockFindMergedPR).toHaveBeenCalledWith(
       mockOctokit,
@@ -94,29 +121,28 @@ describe("push handler", () => {
     );
   });
 
-  it("fetches full PR data when merged PR is found", async () => {
+  it("skips analysis when push comes from a merged PR", async () => {
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig);
+    await handlePush(payload, mockOctokit, mockConfig, mockAliaClient);
 
-    expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
-    expect(mockFetchFiles).toHaveBeenCalledTimes(1);
-    expect(mockFetchCommits).toHaveBeenCalledTimes(1);
-    expect(mockFetchComments).toHaveBeenCalledTimes(1);
+    // Merged PR found → skip, handled by pull_request closed event
+    expect(mockRunClaudeAnalysis).not.toHaveBeenCalled();
+    expect(mockSendInsights).not.toHaveBeenCalled();
   });
 
-  it("logs warning and exits cleanly when no merged PR found", async () => {
+  it("runs analysis on standalone push commits", async () => {
     mockFindMergedPR.mockImplementation(() =>
       Promise.resolve(null as number | null),
     );
     const payload = createMockPushPayload();
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig);
+    await handlePush(payload, mockOctokit, mockConfig, mockAliaClient);
 
-    // Should NOT fetch PR data
-    expect(mockFetchPullRequestData).not.toHaveBeenCalled();
+    expect(mockRunClaudeAnalysis).toHaveBeenCalledTimes(1);
+    expect(mockSendInsights).toHaveBeenCalledTimes(1);
   });
 
   it("skips non-main branch pushes", async () => {
@@ -125,9 +151,10 @@ describe("push handler", () => {
     });
     const mockOctokit = {} as never;
 
-    await handlePush(payload, mockOctokit, mockConfig);
+    await handlePush(payload, mockOctokit, mockConfig, mockAliaClient);
 
     expect(mockFindMergedPR).not.toHaveBeenCalled();
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();
+    expect(mockRunClaudeAnalysis).not.toHaveBeenCalled();
   });
 });

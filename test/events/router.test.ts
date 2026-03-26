@@ -1,5 +1,6 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import type { ActionConfig } from "../../src/config/inputs";
+import type { AliaClient } from "../../src/services/alia-client";
 
 // Mock @actions/core
 const mockCoreInfo = mock(() => {});
@@ -11,9 +12,10 @@ mock.module("@actions/core", () => ({
   debug: mock(() => {}),
   group: mock((_name: string, fn: () => Promise<void>) => fn()),
   setFailed: mock(() => {}),
+  getIDToken: mock(() => Promise.resolve("mock-oidc-token")),
 }));
 
-// Mock logger to avoid transitive @actions/core dependency
+// Mock logger
 mock.module("../../src/utils/logger", () => ({
   log: {
     info: mock(() => {}),
@@ -26,7 +28,7 @@ mock.module("../../src/utils/logger", () => ({
 }));
 
 // Mock @actions/github context
-let mockEventName = "issue_comment";
+let mockEventName = "push";
 let mockPayload: Record<string, unknown> = {};
 mock.module("@actions/github", () => ({
   context: {
@@ -36,10 +38,12 @@ mock.module("@actions/github", () => ({
     get payload() {
       return mockPayload;
     },
+    repo: { owner: "owner", repo: "test-repo" },
+    ref: "refs/heads/main",
   },
 }));
 
-// Mock all dependencies that handlers need so they run without errors
+// Mock data-fetcher
 const mockFetchPullRequestData = mock(() =>
   Promise.resolve({
     number: 42,
@@ -54,17 +58,6 @@ const mockFetchPullRequestData = mock(() =>
     url: "https://github.com/owner/repo/pull/42",
   }),
 );
-const mockFetchIssueData = mock(() =>
-  Promise.resolve({
-    number: 10,
-    title: "Test Issue",
-    body: "Issue body",
-    author: "reporter",
-    labels: [],
-    url: "https://github.com/owner/repo/issues/10",
-    isPullRequest: false,
-  }),
-);
 const mockFetchComments = mock(() => Promise.resolve([]));
 const mockFetchFiles = mock(() => Promise.resolve([]));
 const mockFetchCommits = mock(() => Promise.resolve([]));
@@ -72,7 +65,6 @@ const mockFindMergedPR = mock(() => Promise.resolve(42 as number | null));
 
 mock.module("../../src/github/data-fetcher", () => ({
   fetchPullRequestData: mockFetchPullRequestData,
-  fetchIssueData: mockFetchIssueData,
   fetchComments: mockFetchComments,
   fetchFiles: mockFetchFiles,
   fetchCommits: mockFetchCommits,
@@ -83,66 +75,72 @@ mock.module("../../src/github/data-formatter", () => ({
   formatEventContext: mock(() => "Formatted context"),
 }));
 
+// Mock claude-analysis
+const mockRunClaudeAnalysis = mock(() =>
+  Promise.resolve({ summaries: ["test insight"], cost: 0.01, durationMs: 1000 }),
+);
+mock.module("../../src/events/claude-analysis", () => ({
+  runClaudeAnalysis: mockRunClaudeAnalysis,
+}));
+
 import { routeEvent } from "../../src/events/router";
 
-const mockConfig: ActionConfig = {
+const mockConfig = {
   githubToken: "ghp_test",
-};
+  aliaBackendUrl: "https://backend.example.com",
+  aliaSkillStoreRoute: "/api/skills",
+  aliaSaveInsightsRoute: "/api/insights",
+} as ActionConfig;
+
+const mockSendInsights = mock(() => Promise.resolve());
+const mockAliaClient = {
+  fetchSkillZip: mock(() => Promise.resolve(new ArrayBuffer(0))),
+  sendInsights: mockSendInsights,
+} as unknown as AliaClient;
 
 describe("event router", () => {
   beforeEach(() => {
     mockFetchPullRequestData.mockClear();
-    mockFetchIssueData.mockClear();
     mockFetchComments.mockClear();
     mockFetchFiles.mockClear();
     mockFetchCommits.mockClear();
     mockFindMergedPR.mockClear();
+    mockRunClaudeAnalysis.mockClear();
+    mockSendInsights.mockClear();
     mockCoreInfo.mockClear();
     mockCoreWarning.mockClear();
-    // Reset findMergedPR to default
     mockFindMergedPR.mockImplementation(() =>
       Promise.resolve(42 as number | null),
     );
   });
 
-  it("dispatches issue_comment to handleIssueComment", async () => {
-    mockEventName = "issue_comment";
+  it("dispatches pull_request opened to handlePullRequestOpened", async () => {
+    mockEventName = "pull_request";
     mockPayload = {
-      action: "created",
-      issue: {
-        number: 42,
-        pull_request: {
-          url: "https://api.github.com/repos/owner/repo/pulls/42",
-        },
-      },
+      action: "opened",
+      pull_request: { number: 42 },
       repository: { name: "test-repo", owner: { login: "owner" } },
     };
 
-    const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent({} as never, mockConfig, mockAliaClient);
 
-    // Verify handler ran by checking it called fetchPullRequestData (PR comment path)
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
+    expect(mockRunClaudeAnalysis).toHaveBeenCalledTimes(1);
   });
 
   it("dispatches pull_request closed to handlePullRequestClosed", async () => {
     mockEventName = "pull_request";
     mockPayload = {
       action: "closed",
-      pull_request: {
-        number: 42,
-        merged: true,
-        merge_commit_sha: "abc123",
-      },
+      pull_request: { number: 42, merged: true, merge_commit_sha: "abc123" },
       repository: { name: "test-repo", owner: { login: "owner" } },
     };
 
-    const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent({} as never, mockConfig, mockAliaClient);
 
-    // Verify handler ran by checking it called fetchPullRequestData
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
     expect(mockFetchFiles).toHaveBeenCalledTimes(1);
+    expect(mockRunClaudeAnalysis).toHaveBeenCalledTimes(1);
   });
 
   it("dispatches push to handlePush", async () => {
@@ -153,37 +151,43 @@ describe("event router", () => {
       repository: { name: "test-repo", owner: { login: "owner" } },
     };
 
-    const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent({} as never, mockConfig, mockAliaClient);
 
-    // Verify push handler ran by checking it called findMergedPR
     expect(mockFindMergedPR).toHaveBeenCalledTimes(1);
   });
 
-  it("ignores pull_request events that are not closed", async () => {
+  it("dispatches workflow_dispatch to handleWorkflowDispatch", async () => {
+    mockEventName = "workflow_dispatch";
+    mockPayload = {};
+
+    await routeEvent({} as never, mockConfig, mockAliaClient);
+
+    expect(mockRunClaudeAnalysis).toHaveBeenCalledTimes(1);
+    expect(mockSendInsights).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores unsupported pull_request actions", async () => {
     mockEventName = "pull_request";
     mockPayload = {
-      action: "opened",
+      action: "labeled",
       pull_request: { number: 42 },
       repository: { name: "test-repo", owner: { login: "owner" } },
     };
 
-    const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent({} as never, mockConfig, mockAliaClient);
 
-    // None of the handler functions should have been called
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();
-    expect(mockFindMergedPR).not.toHaveBeenCalled();
+    expect(mockRunClaudeAnalysis).not.toHaveBeenCalled();
   });
 
   it("does not call any handler for unsupported events", async () => {
     mockEventName = "fork";
     mockPayload = {};
 
-    const mockOctokit = {} as never;
-    await routeEvent(mockOctokit, mockConfig);
+    await routeEvent({} as never, mockConfig, mockAliaClient);
 
     expect(mockFetchPullRequestData).not.toHaveBeenCalled();
     expect(mockFindMergedPR).not.toHaveBeenCalled();
+    expect(mockRunClaudeAnalysis).not.toHaveBeenCalled();
   });
 });

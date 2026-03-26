@@ -10,27 +10,48 @@ mock.module("@actions/core", () => ({
   setFailed: mock(() => {}),
 }));
 
-import { loadInputs } from "../../src/config/inputs.ts";
+import { ActionConfig } from "../../src/config/inputs.ts";
 
-describe("loadInputs", () => {
+describe("ActionConfig.fromEnv", () => {
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
     originalEnv = { ...process.env };
     process.env.GITHUB_TOKEN = "ghp_testtoken";
+    process.env.ALIA_BACKEND_URL = "https://backend.example.com";
+    process.env.ALIA_SKILL_STORE_ROUTE = "/api/skills";
+    process.env.ALIA_SAVE_INSIGHTS_ROUTE = "/api/insights";
   });
 
   afterEach(() => {
     process.env = originalEnv;
   });
 
-  it("returns ActionConfig with githubToken when env var is set", () => {
-    const config = loadInputs();
+  it("returns ActionConfig with all fields when env vars are set", () => {
+    const config = ActionConfig.fromEnv();
     expect(config.githubToken).toBe("ghp_testtoken");
+    expect(config.aliaBackendUrl).toBe("https://backend.example.com");
+    expect(config.aliaSkillStoreRoute).toBe("/api/skills");
+    expect(config.aliaSaveInsightsRoute).toBe("/api/insights");
   });
 
   it("throws when GITHUB_TOKEN is missing from env", () => {
     delete process.env.GITHUB_TOKEN;
-    expect(() => loadInputs()).toThrow("GITHUB_TOKEN");
+    expect(() => ActionConfig.fromEnv()).toThrow("GITHUB_TOKEN");
+  });
+
+  it("throws when ALIA_BACKEND_URL is missing from env", () => {
+    delete process.env.ALIA_BACKEND_URL;
+    expect(() => ActionConfig.fromEnv()).toThrow("ALIA_BACKEND_URL");
+  });
+
+  it("throws when ALIA_SKILL_STORE_ROUTE is missing from env", () => {
+    delete process.env.ALIA_SKILL_STORE_ROUTE;
+    expect(() => ActionConfig.fromEnv()).toThrow("ALIA_SKILL_STORE_ROUTE");
+  });
+
+  it("throws when ALIA_SAVE_INSIGHTS_ROUTE is missing from env", () => {
+    delete process.env.ALIA_SAVE_INSIGHTS_ROUTE;
+    expect(() => ActionConfig.fromEnv()).toThrow("ALIA_SAVE_INSIGHTS_ROUTE");
   });
 });

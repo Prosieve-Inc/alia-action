@@ -2,8 +2,6 @@ name: Alia PR Analysis
 
 on:
   workflow_dispatch:
-  issue_comment:
-    types: [created]
   pull_request:
     types: [opened, reopened, synchronize, closed]
   push:
@@ -20,8 +18,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'push' ||
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' && github.event.issue)
+      github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v5
 
@@ -36,3 +33,6 @@ jobs:
         uses: ./
         env:
           ANTHROPIC_VERTEX_PROJECT_ID: ${{ steps.auth.outputs.project_id }}
+          ALIA_BACKEND_URL: ${{ secrets.ALIA_BACKEND_URL }}
+          ALIA_SKILL_STORE_ROUTE: ${{ secrets.ALIA_SKILL_STORE_ROUTE }}
+          ALIA_SAVE_INSIGHTS_ROUTE: ${{ secrets.ALIA_SAVE_INSIGHTS_ROUTE }}

@@ -13,7 +13,7 @@ import { formatEventContext } from "../github/data-formatter";
 import { runClaudeAnalysis } from "./claude-analysis";
 import { log } from "../utils/logger";
 
-export async function handlePullRequestClosed(
+export async function handlePullRequestOpened(
   payload: PullRequestEvent,
   octokit: Octokit,
   _config: ActionConfig,
@@ -24,7 +24,7 @@ export async function handlePullRequestClosed(
   const prNumber = payload.pull_request.number;
 
   log.info(
-    `Processing pull_request closed event for #${prNumber} (merged: ${payload.pull_request.merged})`,
+    `Processing pull_request ${payload.action} event for #${prNumber}`,
   );
 
   const [pullRequest, files, commits, comments] = await Promise.all([
@@ -50,12 +50,10 @@ export async function handlePullRequestClosed(
 
   await aliaClient.sendInsights(
     {
-      event: "pull_request_closed",
+      event: `pull_request_${payload.action}`,
       prNumber,
       title: pullRequest.title,
       author: pullRequest.author,
-      merged: pullRequest.merged,
-      mergedAt: pullRequest.mergedAt,
       baseBranch: pullRequest.baseBranch,
       headBranch: pullRequest.headBranch,
       url: pullRequest.url,
@@ -65,5 +63,5 @@ export async function handlePullRequestClosed(
     analysis.summaries,
   );
 
-  log.info(`pull_request closed handler complete (merged: ${pullRequest.merged})`);
+  log.info(`pull_request ${payload.action} handler complete (PR #${prNumber})`);
 }

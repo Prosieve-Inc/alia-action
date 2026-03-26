@@ -10,6 +10,7 @@ mock.module("@actions/core", () => ({
   debug: mock(() => {}),
   group: mock((_name: string, fn: () => Promise<void>) => fn()),
   setFailed: mock(() => {}),
+  getIDToken: mock(() => Promise.resolve("mock-oidc-token")),
 }));
 
 // Mock logger to avoid transitive @actions/core dependency
@@ -58,12 +59,36 @@ mock.module("../../src/github/data-formatter", () => ({
   formatEventContext: mockFormatEventContext,
 }));
 
+// Mock claude-analysis
+const mockRunClaudeAnalysis = mock(() =>
+  Promise.resolve({ summaries: ["test insight"], cost: 0.01, durationMs: 1000 }),
+);
+mock.module("../../src/events/claude-analysis", () => ({
+  runClaudeAnalysis: mockRunClaudeAnalysis,
+}));
+
+// Mock alia-client
+const mockSendInsights = mock(() => Promise.resolve());
+mock.module("../../src/services/alia-client", () => ({
+  fetchSkillZip: mock(() => Promise.resolve(new ArrayBuffer(0))),
+  sendInsights: mockSendInsights,
+}));
+
+import type { AliaClient } from "../../src/services/alia-client";
 import { handlePullRequestClosed } from "../../src/events/pull-request-closed";
 import { createMockPullRequestPayload } from "../mock-context";
 
-const mockConfig: ActionConfig = {
+const mockConfig = {
   githubToken: "ghp_test",
-};
+  aliaBackendUrl: "https://backend.example.com",
+  aliaSkillStoreRoute: "/api/skills",
+  aliaSaveInsightsRoute: "/api/insights",
+} as ActionConfig;
+
+const mockAliaClient = {
+  fetchSkillZip: mock(() => Promise.resolve(new ArrayBuffer(0))),
+  sendInsights: mockSendInsights,
+} as unknown as AliaClient;
 
 describe("pull-request-closed handler", () => {
   beforeEach(() => {
@@ -75,6 +100,8 @@ describe("pull-request-closed handler", () => {
     mockFetchFiles.mockClear();
     mockFetchCommits.mockClear();
     mockFormatEventContext.mockClear();
+    mockRunClaudeAnalysis.mockClear();
+    mockSendInsights.mockClear();
     lastFormatArg = null;
   });
 
@@ -82,7 +109,7 @@ describe("pull-request-closed handler", () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
+    await handlePullRequestClosed(payload, mockOctokit, mockConfig, mockAliaClient);
 
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
     expect(mockFetchFiles).toHaveBeenCalledTimes(1);
@@ -90,11 +117,21 @@ describe("pull-request-closed handler", () => {
     expect(mockFetchComments).toHaveBeenCalledTimes(1);
   });
 
+  it("runs claude analysis and sends insights", async () => {
+    const payload = createMockPullRequestPayload();
+    const mockOctokit = {} as never;
+
+    await handlePullRequestClosed(payload, mockOctokit, mockConfig, mockAliaClient);
+
+    expect(mockRunClaudeAnalysis).toHaveBeenCalledTimes(1);
+    expect(mockSendInsights).toHaveBeenCalledTimes(1);
+  });
+
   it("includes merged status in EventContext", async () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
+    await handlePullRequestClosed(payload, mockOctokit, mockConfig, mockAliaClient);
 
     expect(mockFormatEventContext).toHaveBeenCalledTimes(1);
     const contextArg = lastFormatArg as {
@@ -128,7 +165,7 @@ describe("pull-request-closed handler", () => {
     });
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig);
+    await handlePullRequestClosed(payload, mockOctokit, mockConfig, mockAliaClient);
 
     const contextArg = lastFormatArg as {
       pullRequest?: { merged: boolean };
