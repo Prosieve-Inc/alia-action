@@ -27,6 +27,7 @@ export async function fetchPullRequestData(
     author: data.user?.login ?? "unknown",
     baseBranch: data.base.ref,
     headBranch: data.head.ref,
+    state: data.state as "open" | "closed",
     merged: data.merged,
     mergedAt: data.merged_at,
     labels: data.labels.map((l) => l.name ?? ""),

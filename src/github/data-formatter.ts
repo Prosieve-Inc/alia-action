@@ -12,7 +12,7 @@ export function formatEventContext(context: EventContext): string {
     const pr = context.pullRequest;
     lines.push(`PR #${pr.number}: ${pr.title}`);
     lines.push(`Author: ${pr.author}`);
-    lines.push(`Status: ${pr.merged ? "merged" : "closed (not merged)"}`);
+    lines.push(`Status: ${pr.merged ? "merged" : pr.state}`);
     lines.push(`Branches: ${pr.headBranch} -> ${pr.baseBranch}`);
     if (pr.labels.length > 0) {
       lines.push(`Labels: ${pr.labels.join(", ")}`);

@@ -5,6 +5,7 @@ export interface PullRequestData {
   author: string;
   baseBranch: string;
   headBranch: string;
+  state: "open" | "closed";
   merged: boolean;
   mergedAt: string | null;
   labels: string[];

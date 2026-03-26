@@ -32,6 +32,7 @@ const defaultPR: PullRequestData = {
   author: "testauthor",
   baseBranch: "main",
   headBranch: "feature",
+  state: "closed",
   merged: true,
   mergedAt: "2026-01-15T10:00:00Z",
   labels: [],
