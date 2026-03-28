@@ -44,7 +44,7 @@ export async function routeEvent(
       await handlePush(payload as PushEvent, octokit, config, aliaClient);
       break;
     case "workflow_dispatch":
-      await handleWorkflowDispatch(config, aliaClient);
+      await handleWorkflowDispatch(octokit, config, aliaClient);
       break;
     default:
       log.warn(`Unsupported event: ${eventName}`);

@@ -11,6 +11,7 @@ import {
 } from "../github/data-fetcher";
 import { formatEventContext } from "../github/data-formatter";
 import { runClaudeAnalysis } from "./claude-analysis";
+import { enrichSummariesWithUserIds } from "./common/enrich-users";
 import { log } from "../utils/logger";
 
 export async function handlePullRequestClosed(
@@ -47,6 +48,7 @@ export async function handlePullRequestClosed(
   log.info(formatEventContext(context));
 
   const analysis = await runClaudeAnalysis("pr", context, aliaClient);
+  const enrichedSummaries = await enrichSummariesWithUserIds(analysis.summaries, octokit);
 
   await aliaClient.sendInsights(
     {
@@ -62,7 +64,7 @@ export async function handlePullRequestClosed(
       owner,
       repo,
     },
-    analysis.summaries,
+    enrichedSummaries,
   );
 
   log.info(`pull_request closed handler complete (merged: ${pullRequest.merged})`);

@@ -176,6 +176,31 @@ export async function fetchCommits(
   }));
 }
 
+export async function fetchUserIdMap(
+  octokit: Octokit,
+  usernames: string[],
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  const results = await Promise.allSettled(
+    usernames.map((username) =>
+      octokit.rest.users.getByUsername({ username }),
+    ),
+  );
+
+  for (let i = 0; i < usernames.length; i++) {
+    const result = results[i]!;
+    if (result.status === "fulfilled") {
+      map.set(usernames[i]!, result.value.data.id);
+    } else {
+      log.warn(
+        `Failed to fetch user ID for "${usernames[i]}": ${result.reason}`,
+      );
+    }
+  }
+
+  return map;
+}
+
 export async function findMergedPR(
   octokit: Octokit,
   owner: string,

@@ -6,6 +6,7 @@ import type { EventContext } from "../github/types";
 import { findMergedPR } from "../github/data-fetcher";
 import { formatEventContext } from "../github/data-formatter";
 import { runClaudeAnalysis } from "./claude-analysis";
+import { enrichSummariesWithUserIds } from "./common/enrich-users";
 import { log } from "../utils/logger";
 
 export async function handlePush(
@@ -58,6 +59,7 @@ export async function handlePush(
   log.info(formatEventContext(context));
 
   const analysis = await runClaudeAnalysis("push", context, aliaClient);
+  const enrichedSummaries = await enrichSummariesWithUserIds(analysis.summaries, octokit);
 
   await aliaClient.sendInsights(
     {
@@ -67,7 +69,7 @@ export async function handlePush(
       owner,
       repo,
     },
-    analysis.summaries,
+    enrichedSummaries,
   );
 
   log.info(`push handler complete (commit ${commitSha.slice(0, 7)})`);
