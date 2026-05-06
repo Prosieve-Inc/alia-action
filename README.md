@@ -299,4 +299,8 @@ bun run format
 
 ## License
 
-Proprietary. All rights reserved.
+Proprietary — see [LICENSE](LICENSE).
+
+This software is made publicly visible solely so that the GitHub Actions runtime can execute it via `uses: Prosieve-Inc/alia-action@<ref>` in repositories where the official Alia Analyzer GitHub App has been installed and authorized. All other rights — including reproduction, modification, redistribution, derivative works, and reverse engineering — are reserved.
+
+For licensing inquiries: thomas@usealia.com

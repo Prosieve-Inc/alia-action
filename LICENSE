@@ -1,0 +1,37 @@
+PROPRIETARY LICENSE
+
+Copyright (c) 2026 Prosieve Inc. All rights reserved.
+
+This software ("Alia Action") is proprietary to Prosieve Inc. It is
+made publicly visible solely to enable execution by the GitHub Actions
+runtime when invoked via the `uses:` directive (e.g.,
+`uses: Prosieve-Inc/alia-action@<ref>`) in conjunction with the
+official Alia Analyzer GitHub App authorized by Prosieve Inc.
+
+PERMITTED USE
+You may execute this software, unmodified, as a GitHub Action via the
+`uses:` directive in repositories where the Alia Analyzer GitHub App
+has been installed and authorized by Prosieve Inc.
+
+PROHIBITED USE (without prior written permission from Prosieve Inc.)
+- Reproducing, copying, or redistributing the source code or any
+  portion thereof, in any form.
+- Modifying, adapting, translating, or creating derivative works of
+  this software.
+- Reverse engineering, decompiling, or disassembling the software,
+  except to the extent expressly permitted by applicable law.
+- Incorporating this software, in whole or in part, into any other
+  software product, service, or offering.
+- Removing or altering any copyright, trademark, or proprietary
+  notice.
+- Using this software to provide a competing product or service.
+
+NO WARRANTY
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+NON-INFRINGEMENT. IN NO EVENT SHALL PROSIEVE INC. BE LIABLE FOR ANY
+CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THIS
+SOFTWARE.
+
+For licensing inquiries: thomas@usealia.com
