@@ -104,10 +104,15 @@ Fetches only the commits relevant to the event. No wasteful full clones for PRs 
 
 Add these secrets to your repository (`Settings > Secrets and variables > Actions`):
 
-| Secret                | Description                                         |
-| --------------------- | --------------------------------------------------- |
-| `WIF_PROVIDER`        | Workload Identity Federation provider resource name |
-| `WIF_SERVICE_ACCOUNT` | Service account email with Vertex AI access         |
+| Secret                     | Description                                                                |
+| -------------------------- | -------------------------------------------------------------------------- |
+| `WIF_PROVIDER`             | Workload Identity Federation provider resource name (provided by Alia)     |
+| `WIF_SERVICE_ACCOUNT`      | Service account email with Vertex AI access (provided by Alia)             |
+| `ALIA_BACKEND_URL`         | Alia backend base URL (provided by Alia)                                   |
+| `ALIA_SAVE_INSIGHTS_ROUTE` | Route for posting analysis insights to the backend (provided by Alia)      |
+| `ALIA_SKILL_STORE_ROUTE`   | Route for fetching the analysis skill bundle from the backend (provided by Alia) |
+
+> Contact the Alia team to receive the values for these secrets and to add your GitHub organization to the install allow list.
 
 ### 2. Create the Workflow
 
@@ -131,24 +136,23 @@ permissions:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
-      github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Authenticate to Google Cloud
         id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Run Alia Action
-        uses: rtk-ai/alia-action@main
+        uses: Prosieve-Inc/alia-action@main
         env:
           ANTHROPIC_VERTEX_PROJECT_ID: ${{ steps.auth.outputs.project_id }}
+          ALIA_BACKEND_URL: ${{ secrets.ALIA_BACKEND_URL }}
+          ALIA_SKILL_STORE_ROUTE: ${{ secrets.ALIA_SKILL_STORE_ROUTE }}
+          ALIA_SAVE_INSIGHTS_ROUTE: ${{ secrets.ALIA_SAVE_INSIGHTS_ROUTE }}
 ```
 
 ### 3. Required Permissions
