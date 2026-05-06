@@ -147,7 +147,7 @@ jobs:
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Run Alia Action
-        uses: Prosieve-Inc/alia-action@main
+        uses: Prosieve-Inc/alia-action@v1.0.0
         env:
           ANTHROPIC_VERTEX_PROJECT_ID: ${{ steps.auth.outputs.project_id }}
           ALIA_BACKEND_URL: ${{ secrets.ALIA_BACKEND_URL }}
