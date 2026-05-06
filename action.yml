@@ -53,7 +53,9 @@ runs:
 
     - name: Initialize RTK for Claude Code
       shell: bash
-      run: rtk init -g
+      run: |
+        mkdir -p "$HOME/.claude"
+        rtk init -g
 
     - name: Run Alia Action
       shell: bash
