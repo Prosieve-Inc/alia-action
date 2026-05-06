@@ -47,9 +47,19 @@ runs:
 
     - name: Install RTK CLI
       shell: bash
+      env:
+        # Pinned for supply-chain safety. Bump SHA + HASH + RTK_VERSION together.
+        # SHA: rtk-ai/rtk commit pinning install.sh contents.
+        # HASH: sha256 of install.sh at that SHA (verified before exec).
+        # RTK_VERSION: pins the rtk binary release the script downloads.
+        RTK_INSTALL_SHA: "2fbc7514f6964acabcfac65501b8bb6b525e3aa8"
+        RTK_INSTALL_HASH: "0c46611d70d0eee64c43c6398f8b1fe057b7f0b052810bbeec09288898ba9a46"
+        RTK_VERSION: "v0.39.0"
       run: |
-        curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
-        echo "$HOME/.rtk/bin" >> $GITHUB_PATH
+        curl -fsSL "https://raw.githubusercontent.com/rtk-ai/rtk/${RTK_INSTALL_SHA}/install.sh" -o /tmp/rtk-install.sh
+        echo "${RTK_INSTALL_HASH}  /tmp/rtk-install.sh" | sha256sum -c -
+        sh /tmp/rtk-install.sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Initialize RTK for Claude Code
       shell: bash
