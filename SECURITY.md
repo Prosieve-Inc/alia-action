@@ -3,7 +3,7 @@
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in Alia Action, please report it
-privately by emailing **security@usealia.com** or by using GitHub's
+privately by emailing **lucas@usealia.com** or by using GitHub's
 "Report a vulnerability" button under the Security tab of this repository.
 
 Please include:
