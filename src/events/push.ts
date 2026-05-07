@@ -59,7 +59,10 @@ export async function handlePush(
   log.info(formatEventContext(context));
 
   const analysis = await runClaudeAnalysis("push", context, aliaClient);
-  const enrichedSummaries = await enrichSummariesWithUserIds(analysis.summaries, octokit);
+  const enrichedSummaries = await enrichSummariesWithUserIds(
+    analysis.summaries,
+    octokit,
+  );
 
   await aliaClient.sendInsights(
     {

@@ -48,7 +48,10 @@ export async function handlePullRequestClosed(
   log.info(formatEventContext(context));
 
   const analysis = await runClaudeAnalysis("pr", context, aliaClient);
-  const enrichedSummaries = await enrichSummariesWithUserIds(analysis.summaries, octokit);
+  const enrichedSummaries = await enrichSummariesWithUserIds(
+    analysis.summaries,
+    octokit,
+  );
 
   await aliaClient.sendInsights(
     {
@@ -67,5 +70,7 @@ export async function handlePullRequestClosed(
     enrichedSummaries,
   );
 
-  log.info(`pull_request closed handler complete (merged: ${pullRequest.merged})`);
+  log.info(
+    `pull_request closed handler complete (merged: ${pullRequest.merged})`,
+  );
 }
