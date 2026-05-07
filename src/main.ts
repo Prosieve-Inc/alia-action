@@ -3,7 +3,6 @@ import { ActionConfig } from "./config/inputs";
 import { createOctokitClient } from "./github/client";
 import { ServiceConfig } from "./services/config";
 import { AliaClient } from "./services/alia-client";
-// import { handleClaudeTest } from "./events/claude-test";
 import { routeEvent } from "./events/router";
 import { handleError } from "./utils/errors";
 import { log } from "./utils/logger";
@@ -16,11 +15,6 @@ async function run(): Promise<void> {
       log.info(
         `Repo: ${github.context.repo.owner}/${github.context.repo.repo}`,
       );
-
-      // Run Claude SDK test (hard-coded proof-of-concept)
-      // await log.group("Claude SDK Test", async () => {
-      //   await handleClaudeTest();
-      // });
 
       const octokit = createOctokitClient(config.githubToken);
       const serviceConfig = new ServiceConfig(config);

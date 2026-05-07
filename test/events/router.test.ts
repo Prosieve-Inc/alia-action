@@ -77,7 +77,11 @@ mock.module("../../src/github/data-formatter", () => ({
 
 // Mock claude-analysis
 const mockRunClaudeAnalysis = mock(() =>
-  Promise.resolve({ summaries: ["test insight"], cost: 0.01, durationMs: 1000 }),
+  Promise.resolve({
+    summaries: ["test insight"],
+    cost: 0.01,
+    durationMs: 1000,
+  }),
 );
 mock.module("../../src/events/claude-analysis", () => ({
   runClaudeAnalysis: mockRunClaudeAnalysis,
@@ -86,7 +90,7 @@ mock.module("../../src/events/claude-analysis", () => ({
 import { routeEvent } from "../../src/events/router";
 
 const mockConfig = {
-  githubToken: "ghp_test",
+  githubToken: "test-token",
   aliaBackendUrl: "https://backend.example.com",
   aliaSkillStoreRoute: "/api/skills",
   aliaSaveInsightsRoute: "/api/insights",

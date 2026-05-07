@@ -62,7 +62,11 @@ mock.module("../../src/github/data-formatter", () => ({
 
 // Mock claude-analysis
 const mockRunClaudeAnalysis = mock(() =>
-  Promise.resolve({ summaries: ["test insight"], cost: 0.01, durationMs: 1000 }),
+  Promise.resolve({
+    summaries: ["test insight"],
+    cost: 0.01,
+    durationMs: 1000,
+  }),
 );
 mock.module("../../src/events/claude-analysis", () => ({
   runClaudeAnalysis: mockRunClaudeAnalysis,
@@ -80,7 +84,7 @@ import { handlePullRequestClosed } from "../../src/events/pull-request-closed";
 import { createMockPullRequestPayload } from "../mock-context";
 
 const mockConfig = {
-  githubToken: "ghp_test",
+  githubToken: "test-token",
   aliaBackendUrl: "https://backend.example.com",
   aliaSkillStoreRoute: "/api/skills",
   aliaSaveInsightsRoute: "/api/insights",
@@ -110,7 +114,12 @@ describe("pull-request-closed handler", () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig, mockAliaClient);
+    await handlePullRequestClosed(
+      payload,
+      mockOctokit,
+      mockConfig,
+      mockAliaClient,
+    );
 
     expect(mockFetchPullRequestData).toHaveBeenCalledTimes(1);
     expect(mockFetchFiles).toHaveBeenCalledTimes(1);
@@ -122,7 +131,12 @@ describe("pull-request-closed handler", () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig, mockAliaClient);
+    await handlePullRequestClosed(
+      payload,
+      mockOctokit,
+      mockConfig,
+      mockAliaClient,
+    );
 
     expect(mockRunClaudeAnalysis).toHaveBeenCalledTimes(1);
     expect(mockSendInsights).toHaveBeenCalledTimes(1);
@@ -132,7 +146,12 @@ describe("pull-request-closed handler", () => {
     const payload = createMockPullRequestPayload();
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig, mockAliaClient);
+    await handlePullRequestClosed(
+      payload,
+      mockOctokit,
+      mockConfig,
+      mockAliaClient,
+    );
 
     expect(mockFormatEventContext).toHaveBeenCalledTimes(1);
     const contextArg = lastFormatArg as {
@@ -166,7 +185,12 @@ describe("pull-request-closed handler", () => {
     });
     const mockOctokit = {} as never;
 
-    await handlePullRequestClosed(payload, mockOctokit, mockConfig, mockAliaClient);
+    await handlePullRequestClosed(
+      payload,
+      mockOctokit,
+      mockConfig,
+      mockAliaClient,
+    );
 
     const contextArg = lastFormatArg as {
       pullRequest?: { merged: boolean };

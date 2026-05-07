@@ -104,12 +104,12 @@ Fetches only the commits relevant to the event. No wasteful full clones for PRs 
 
 Add these secrets to your repository (`Settings > Secrets and variables > Actions`):
 
-| Secret                     | Description                                                                |
-| -------------------------- | -------------------------------------------------------------------------- |
-| `WIF_PROVIDER`             | Workload Identity Federation provider resource name (provided by Alia)     |
-| `WIF_SERVICE_ACCOUNT`      | Service account email with Vertex AI access (provided by Alia)             |
-| `ALIA_BACKEND_URL`         | Alia backend base URL (provided by Alia)                                   |
-| `ALIA_SAVE_INSIGHTS_ROUTE` | Route for posting analysis insights to the backend (provided by Alia)      |
+| Secret                     | Description                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| `WIF_PROVIDER`             | Workload Identity Federation provider resource name (provided by Alia)           |
+| `WIF_SERVICE_ACCOUNT`      | Service account email with Vertex AI access (provided by Alia)                   |
+| `ALIA_BACKEND_URL`         | Alia backend base URL (provided by Alia)                                         |
+| `ALIA_SAVE_INSIGHTS_ROUTE` | Route for posting analysis insights to the backend (provided by Alia)            |
 | `ALIA_SKILL_STORE_ROUTE`   | Route for fetching the analysis skill bundle from the backend (provided by Alia) |
 
 > Contact the Alia team to receive the values for these secrets and to add your GitHub organization to the install allow list.
@@ -154,6 +154,13 @@ jobs:
           ALIA_SKILL_STORE_ROUTE: ${{ secrets.ALIA_SKILL_STORE_ROUTE }}
           ALIA_SAVE_INSIGHTS_ROUTE: ${{ secrets.ALIA_SAVE_INSIGHTS_ROUTE }}
 ```
+
+> [!WARNING]
+> Do **not** trigger this action via `pull_request_target`. The agent
+> processes attacker-controlled PR content (title, body, comments) with
+> filesystem and git read access on the runner. Using `pull_request_target`
+> exposes repository secrets to fork PRs and enables prompt-injection-driven
+> exfiltration. Use `pull_request` only.
 
 ### 3. Required Permissions
 

@@ -17,7 +17,7 @@ describe("ActionConfig.fromEnv", () => {
 
   beforeEach(() => {
     originalEnv = { ...process.env };
-    process.env.GITHUB_TOKEN = "ghp_testtoken";
+    process.env.GITHUB_TOKEN = "test-token";
     process.env.ALIA_BACKEND_URL = "https://backend.example.com";
     process.env.ALIA_SKILL_STORE_ROUTE = "/api/skills";
     process.env.ALIA_SAVE_INSIGHTS_ROUTE = "/api/insights";
@@ -29,7 +29,7 @@ describe("ActionConfig.fromEnv", () => {
 
   it("returns ActionConfig with all fields when env vars are set", () => {
     const config = ActionConfig.fromEnv();
-    expect(config.githubToken).toBe("ghp_testtoken");
+    expect(config.githubToken).toBe("test-token");
     expect(config.aliaBackendUrl).toBe("https://backend.example.com");
     expect(config.aliaSkillStoreRoute).toBe("/api/skills");
     expect(config.aliaSaveInsightsRoute).toBe("/api/insights");
