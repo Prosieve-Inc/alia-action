@@ -13,8 +13,7 @@ export async function handleWorkflowDispatch(
   aliaClient: AliaClient,
 ): Promise<void> {
   const { owner, repo } = github.context.repo;
-  const branch =
-    github.context.ref?.replace("refs/heads/", "") ?? "unknown";
+  const branch = github.context.ref?.replace("refs/heads/", "") ?? "unknown";
 
   log.info(`Processing workflow_dispatch for ${owner}/${repo}`);
 
@@ -28,7 +27,10 @@ export async function handleWorkflowDispatch(
   };
 
   const analysis = await runClaudeAnalysis("dispatch", context, aliaClient);
-  const enrichedSummaries = await enrichSummariesWithUserIds(analysis.summaries, octokit);
+  const enrichedSummaries = await enrichSummariesWithUserIds(
+    analysis.summaries,
+    octokit,
+  );
 
   await aliaClient.sendInsights(
     {

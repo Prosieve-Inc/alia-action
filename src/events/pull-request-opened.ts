@@ -24,9 +24,7 @@ export async function handlePullRequestOpened(
   const repo = payload.repository.name;
   const prNumber = payload.pull_request.number;
 
-  log.info(
-    `Processing pull_request ${payload.action} event for #${prNumber}`,
-  );
+  log.info(`Processing pull_request ${payload.action} event for #${prNumber}`);
 
   const [pullRequest, files, commits, comments] = await Promise.all([
     fetchPullRequestData(octokit, owner, repo, prNumber),
@@ -48,7 +46,10 @@ export async function handlePullRequestOpened(
   log.info(formatEventContext(context));
 
   const analysis = await runClaudeAnalysis("pr", context, aliaClient);
-  const enrichedSummaries = await enrichSummariesWithUserIds(analysis.summaries, octokit);
+  const enrichedSummaries = await enrichSummariesWithUserIds(
+    analysis.summaries,
+    octokit,
+  );
 
   await aliaClient.sendInsights(
     {

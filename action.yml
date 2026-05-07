@@ -26,7 +26,7 @@ runs:
         if [ "$EVENT" = "workflow_dispatch" ]; then
           echo "Manual trigger — fetching full history"
           git -C "$WORKSPACE" fetch --unshallow || true
-        elif [ "$EVENT" = "pull_request" ] || [ "$EVENT" = "pull_request_target" ]; then
+        elif [ "$EVENT" = "pull_request" ]; then
           echo "PR trigger — fetching base branch and PR commits"
           git -C "$WORKSPACE" fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 || true
           COMMITS=${{ github.event.pull_request.commits }}

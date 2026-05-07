@@ -63,7 +63,12 @@ describe("enrich-users", () => {
 
     it("enriches multiple comma-separated users in <mentioned> tag", async () => {
       mockFetchUserIdMap.mockImplementation(() =>
-        Promise.resolve(new Map([["user1", 111], ["user2", 222]])),
+        Promise.resolve(
+          new Map([
+            ["user1", 111],
+            ["user2", 222],
+          ]),
+        ),
       );
       const summaries = [
         "Insight\n<insight_type>\nperson_insight\n</insight_type>\n<actor>\n@user1\n</actor>\n<mentioned>\n@user1,@user2\n</mentioned>",
@@ -93,9 +98,7 @@ describe("enrich-users", () => {
       mockFetchUserIdMap.mockImplementation(() =>
         Promise.resolve(new Map([["plainuser", 99999]])),
       );
-      const summaries = [
-        "Text\n<actor>\nplainuser\n</actor>",
-      ];
+      const summaries = ["Text\n<actor>\nplainuser\n</actor>"];
 
       const result = await enrichSummariesWithUserIds(summaries, mockOctokit);
 
@@ -153,11 +156,15 @@ describe("enrich-users", () => {
 
     it("handles whitespace around commas in user lists", async () => {
       mockFetchUserIdMap.mockImplementation(() =>
-        Promise.resolve(new Map([["a", 1], ["b", 2], ["c", 3]])),
+        Promise.resolve(
+          new Map([
+            ["a", 1],
+            ["b", 2],
+            ["c", 3],
+          ]),
+        ),
       );
-      const summaries = [
-        "Text\n<mentioned>\n@a, @b , @c\n</mentioned>",
-      ];
+      const summaries = ["Text\n<mentioned>\n@a, @b , @c\n</mentioned>"];
 
       const result = await enrichSummariesWithUserIds(summaries, mockOctokit);
 
@@ -170,9 +177,7 @@ describe("enrich-users", () => {
       mockFetchUserIdMap.mockImplementation(() =>
         Promise.resolve(new Map<string, number>()),
       );
-      const summaries = [
-        "Text\n<actor>\n@failuser\n</actor>",
-      ];
+      const summaries = ["Text\n<actor>\n@failuser\n</actor>"];
 
       const result = await enrichSummariesWithUserIds(summaries, mockOctokit);
 

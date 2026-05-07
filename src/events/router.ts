@@ -26,9 +26,7 @@ export async function routeEvent(
           config,
           aliaClient,
         );
-      } else if (
-        ["opened", "reopened", "synchronize"].includes(action)
-      ) {
+      } else if (["opened", "reopened", "synchronize"].includes(action)) {
         await handlePullRequestOpened(
           payload as PullRequestEvent,
           octokit,

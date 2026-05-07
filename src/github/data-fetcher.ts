@@ -182,9 +182,7 @@ export async function fetchUserIdMap(
 ): Promise<Map<string, number>> {
   const map = new Map<string, number>();
   const results = await Promise.allSettled(
-    usernames.map((username) =>
-      octokit.rest.users.getByUsername({ username }),
-    ),
+    usernames.map((username) => octokit.rest.users.getByUsername({ username })),
   );
 
   for (let i = 0; i < usernames.length; i++) {

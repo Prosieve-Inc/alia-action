@@ -60,7 +60,11 @@ mock.module("../../src/github/data-formatter", () => ({
 
 // Mock claude-analysis
 const mockRunClaudeAnalysis = mock(() =>
-  Promise.resolve({ summaries: ["test insight"], cost: 0.01, durationMs: 1000 }),
+  Promise.resolve({
+    summaries: ["test insight"],
+    cost: 0.01,
+    durationMs: 1000,
+  }),
 );
 mock.module("../../src/events/claude-analysis", () => ({
   runClaudeAnalysis: mockRunClaudeAnalysis,
@@ -78,7 +82,7 @@ import { handlePush } from "../../src/events/push";
 import { createMockPushPayload } from "../mock-context";
 
 const mockConfig = {
-  githubToken: "ghp_test",
+  githubToken: "test-token",
   aliaBackendUrl: "https://backend.example.com",
   aliaSkillStoreRoute: "/api/skills",
   aliaSaveInsightsRoute: "/api/insights",
