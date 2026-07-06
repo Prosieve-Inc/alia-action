@@ -24,6 +24,9 @@ jobs:
 
       - name: Run Alia Action
         uses: ./
+        # Self-analysis depends on the external Alia backend serving the skill
+        # bundle; don't block PRs when the backend can't (e.g. 404 skill zip).
+        continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ALIA_BACKEND_URL: ${{ secrets.ALIA_BACKEND_URL }}
