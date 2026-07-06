@@ -72,7 +72,7 @@ runs:
       run: bun run $GITHUB_ACTION_PATH/src/main.ts
       env:
         GITHUB_TOKEN: ${{ github.token }}
-        CLAUDE_CODE_USE_VERTEX: "1"
+        ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
         GITHUB_WORKSPACE: ${{ github.workspace }}
         ALIA_BACKEND_URL: ${{ env.ALIA_BACKEND_URL }}
         ALIA_SKILL_STORE_ROUTE: ${{ env.ALIA_SKILL_STORE_ROUTE }}

@@ -67,10 +67,9 @@ export async function runClaudeAnalysis(
   aliaClient: AliaClient,
 ): Promise<AnalysisResult> {
   const cwd = process.env.GITHUB_WORKSPACE || process.cwd();
-  const projectId = process.env.ANTHROPIC_VERTEX_PROJECT_ID;
-  if (!projectId) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error(
-      "ANTHROPIC_VERTEX_PROJECT_ID is not set. Ensure google-github-actions/auth runs before this action.",
+      "ANTHROPIC_API_KEY is not set. Provide it as a secret to the action.",
     );
   }
 
@@ -110,11 +109,10 @@ export async function runClaudeAnalysis(
         settingSources: ["project"],
         outputFormat: { type: "json_schema", schema: OUTPUT_SCHEMA },
         cwd,
+        // Direct Anthropic API: the SDK reads ANTHROPIC_API_KEY from the
+        // environment (spread below). No Vertex flags.
         env: {
           ...(process.env as Record<string, string>),
-          CLAUDE_CODE_USE_VERTEX: "1",
-          ANTHROPIC_VERTEX_PROJECT_ID: projectId,
-          CLOUD_ML_REGION: "global",
         },
       },
     })) {
