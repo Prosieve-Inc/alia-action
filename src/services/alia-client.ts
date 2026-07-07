@@ -1,5 +1,6 @@
 import type { SkillType, InsightMetadata } from "../events/claude-analysis";
 import type { ServiceConfig } from "./config";
+import { ActionError } from "../utils/errors";
 import { log } from "../utils/logger";
 
 export class AliaClient {
@@ -20,6 +21,16 @@ export class AliaClient {
       },
     });
     if (!response.ok) {
+      // A 404 means the skill store has no skill configured for this event
+      // type. That is a valid "nothing to analyze" state, not an infrastructure
+      // failure — surface it as a non-fatal warning so the workflow succeeds
+      // instead of blocking the PR.
+      if (response.status === 404) {
+        throw new ActionError(
+          `No skill configured for type "${skillType}" (skill store returned 404); skipping analysis.`,
+          false,
+        );
+      }
       throw new Error(
         `Failed to fetch skill zip: ${response.status} ${response.statusText}`,
       );
